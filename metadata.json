@@ -1,0 +1,5 @@
+{
+  "name": "Personal Finance Tracker",
+  "description": "An application to track personal investments across various asset classes like stocks, bonds, mutual funds, FDs, and cash. It features a comprehensive dashboard for visualizing portfolio allocation and allows for easy management of investments with full CRUD functionality.",
+  "requestFramePermissions": []
+}
