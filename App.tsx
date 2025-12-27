@@ -5,40 +5,32 @@ import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import InvestmentList from './components/InvestmentList';
 import InvestmentModal from './components/InvestmentModal';
-
-const initialInvestments: Investment[] = [
-  { id: '1', type: InvestmentType.STOCK, name: 'Reliance Industries', ticker: 'RELIANCE', amount: 150000, purchaseDate: '2023-01-15', shares: 50 },
-  { id: '2', type: InvestmentType.MUTUAL_FUND, name: 'SBI Bluechip Fund', fundHouse: 'SBI', amount: 250000, purchaseDate: '2022-11-20', units: 1000 },
-  { id: '3', type: InvestmentType.FD, name: 'HDFC Bank FD', bank: 'HDFC Bank', amount: 500000, purchaseDate: '2023-05-10', interestRate: 7.1, maturityDate: '2025-05-10' },
-  { id: '4', type: InvestmentType.BOND, name: 'GOI Savings Bond', issuer: 'Govt of India', amount: 100000, purchaseDate: '2023-03-22', couponRate: 7.75, maturityDate: '2030-03-22' },
-  { id: '5', type: InvestmentType.CASH, name: 'Savings Account', location: 'ICICI Bank', amount: 300000, purchaseDate: '2023-01-01', currency: 'INR' },
-];
-
-const LOCAL_STORAGE_KEY = 'finance_tracker_investments';
+import { apiService } from './api';
 
 const App: React.FC = () => {
-  const [investments, setInvestments] = useState<Investment[]>(() => {
-    try {
-      const savedInvestments = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (savedInvestments) {
-        return JSON.parse(savedInvestments);
-      }
-    } catch (error) {
-      console.error("Failed to parse investments from localStorage", error);
-    }
-    return initialInvestments;
-  });
-
+  const [investments, setInvestments] = useState<Investment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    loadInvestments();
+  }, []);
+
+  const loadInvestments = async () => {
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(investments));
+      setIsLoading(true);
+      setError(null);
+      const data = await apiService.getAllInvestments();
+      setInvestments(data);
     } catch (error) {
-      console.error("Failed to save investments to localStorage", error);
+      console.error("Failed to load investments", error);
+      setError("Failed to load investments. Please check if the server is running.");
+    } finally {
+      setIsLoading(false);
     }
-  }, [investments]);
+  };
 
 
   const handleAddInvestment = () => {
@@ -51,18 +43,32 @@ const App: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteInvestment = (id: string) => {
-    setInvestments(investments.filter(inv => inv.id !== id));
+  const handleDeleteInvestment = async (id: string) => {
+    try {
+      await apiService.deleteInvestment(id);
+      setInvestments(investments.filter(inv => inv.id !== id));
+    } catch (error) {
+      console.error("Failed to delete investment", error);
+      setError("Failed to delete investment. Please try again.");
+    }
   };
 
-  const handleSaveInvestment = (investment: Investment) => {
-    if (editingInvestment && investment.id) {
-      setInvestments(investments.map(inv => (inv.id === investment.id ? investment : inv)));
-    } else {
-      setInvestments([...investments, { ...investment, id: crypto.randomUUID() }]);
+  const handleSaveInvestment = async (investment: Investment) => {
+    try {
+      if (editingInvestment && investment.id) {
+        const updated = await apiService.updateInvestment(investment.id, investment);
+        setInvestments(investments.map(inv => (inv.id === investment.id ? updated : inv)));
+      } else {
+        const newInvestment = { ...investment, id: crypto.randomUUID() };
+        const created = await apiService.createInvestment(newInvestment);
+        setInvestments([...investments, created]);
+      }
+      setIsModalOpen(false);
+      setEditingInvestment(null);
+    } catch (error) {
+      console.error("Failed to save investment", error);
+      setError("Failed to save investment. Please try again.");
     }
-    setIsModalOpen(false);
-    setEditingInvestment(null);
   };
   
   const totalValue = useMemo(() => investments.reduce((sum, inv) => sum + inv.amount, 0), [investments]);
@@ -83,14 +89,33 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-gray-900 text-gray-200 font-sans">
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <Header onAddInvestment={handleAddInvestment} />
-        <main>
-          <Dashboard totalValue={totalValue} allocationData={allocationData} />
-          <InvestmentList 
-            investments={investments} 
-            onEdit={handleEditInvestment} 
-            onDelete={handleDeleteInvestment}
-          />
-        </main>
+
+        {error && (
+          <div className="bg-red-900 border border-red-700 text-red-100 px-4 py-3 rounded mb-4">
+            <p>{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="text-sm underline mt-2"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="text-lg">Loading investments...</div>
+          </div>
+        ) : (
+          <main>
+            <Dashboard totalValue={totalValue} allocationData={allocationData} />
+            <InvestmentList
+              investments={investments}
+              onEdit={handleEditInvestment}
+              onDelete={handleDeleteInvestment}
+            />
+          </main>
+        )}
       </div>
       <InvestmentModal
         isOpen={isModalOpen}
