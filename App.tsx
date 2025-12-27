@@ -1,16 +1,17 @@
-
-import React, { useState, useMemo, useEffect } from 'react';
-import { Investment, InvestmentType } from './types';
-import Header from './components/Header';
-import Dashboard from './components/Dashboard';
-import InvestmentList from './components/InvestmentList';
-import InvestmentModal from './components/InvestmentModal';
-import { apiService } from './api';
+import React, { useState, useMemo, useEffect } from "react";
+import { Investment, InvestmentType } from "./types";
+import Header from "./components/Header";
+import Dashboard from "./components/Dashboard";
+import InvestmentList from "./components/InvestmentList";
+import InvestmentModal from "./components/InvestmentModal";
+import { apiService } from "./api";
 
 const App: React.FC = () => {
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
+  const [editingInvestment, setEditingInvestment] = useState<Investment | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,13 +26,14 @@ const App: React.FC = () => {
       const data = await apiService.getAllInvestments();
       setInvestments(data);
     } catch (error) {
-      console.error("Failed to load investments", error);
-      setError("Failed to load investments. Please check if the server is running.");
+      console.error("Failed to load investments..", error);
+      setError(
+        "Failed to load investments. Please check if the server is running."
+      );
     } finally {
       setIsLoading(false);
     }
   };
-
 
   const handleAddInvestment = () => {
     setEditingInvestment(null);
@@ -46,7 +48,7 @@ const App: React.FC = () => {
   const handleDeleteInvestment = async (id: string) => {
     try {
       await apiService.deleteInvestment(id);
-      setInvestments(investments.filter(inv => inv.id !== id));
+      setInvestments(investments.filter((inv) => inv.id !== id));
     } catch (error) {
       console.error("Failed to delete investment", error);
       setError("Failed to delete investment. Please try again.");
@@ -56,8 +58,13 @@ const App: React.FC = () => {
   const handleSaveInvestment = async (investment: Investment) => {
     try {
       if (editingInvestment && investment.id) {
-        const updated = await apiService.updateInvestment(investment.id, investment);
-        setInvestments(investments.map(inv => (inv.id === investment.id ? updated : inv)));
+        const updated = await apiService.updateInvestment(
+          investment.id,
+          investment
+        );
+        setInvestments(
+          investments.map((inv) => (inv.id === investment.id ? updated : inv))
+        );
       } else {
         const newInvestment = { ...investment, id: crypto.randomUUID() };
         const created = await apiService.createInvestment(newInvestment);
@@ -70,12 +77,15 @@ const App: React.FC = () => {
       setError("Failed to save investment. Please try again.");
     }
   };
-  
-  const totalValue = useMemo(() => investments.reduce((sum, inv) => sum + inv.amount, 0), [investments]);
-  
+
+  const totalValue = useMemo(
+    () => investments.reduce((sum, inv) => sum + inv.amount, 0),
+    [investments]
+  );
+
   const allocationData = useMemo(() => {
     const allocation: { [key in InvestmentType]?: number } = {};
-    investments.forEach(inv => {
+    investments.forEach((inv) => {
       if (allocation[inv.type]) {
         allocation[inv.type]! += inv.amount;
       } else {
@@ -108,7 +118,10 @@ const App: React.FC = () => {
           </div>
         ) : (
           <main>
-            <Dashboard totalValue={totalValue} allocationData={allocationData} />
+            <Dashboard
+              totalValue={totalValue}
+              allocationData={allocationData}
+            />
             <InvestmentList
               investments={investments}
               onEdit={handleEditInvestment}
