@@ -26,7 +26,7 @@ const App: React.FC = () => {
       const data = await apiService.getAllInvestments();
       setInvestments(data);
     } catch (error) {
-      console.error("Failed to load investments..", error);
+      console.error("Failed to load investments.", error);
       setError(
         "Failed to load investments. Please check if the server is running."
       );
