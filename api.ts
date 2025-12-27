@@ -1,6 +1,6 @@
-import type { Investment } from './types';
+import type { Investment } from "./types";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 class ApiService {
   private baseUrl: string;
@@ -9,14 +9,17 @@ class ApiService {
     this.baseUrl = baseUrl;
   }
 
-  private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  private async request<T>(
+    endpoint: string,
+    options?: RequestInit
+  ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
     try {
       const response = await fetch(url, {
         ...options,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...options?.headers,
         },
       });
@@ -33,7 +36,7 @@ class ApiService {
   }
 
   async getAllInvestments(): Promise<Investment[]> {
-    return this.request<Investment[]>('/api/investments');
+    return this.request<Investment[]>("/api/investments");
   }
 
   async getInvestment(id: string): Promise<Investment> {
@@ -41,27 +44,30 @@ class ApiService {
   }
 
   async createInvestment(investment: Investment): Promise<Investment> {
-    return this.request<Investment>('/api/investments', {
-      method: 'POST',
+    return this.request<Investment>("/api/investments", {
+      method: "POST",
       body: JSON.stringify(investment),
     });
   }
 
-  async updateInvestment(id: string, investment: Investment): Promise<Investment> {
+  async updateInvestment(
+    id: string,
+    investment: Investment
+  ): Promise<Investment> {
     return this.request<Investment>(`/api/investments/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(investment),
     });
   }
 
   async deleteInvestment(id: string): Promise<Investment> {
     return this.request<Investment>(`/api/investments/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
   async checkHealth(): Promise<{ status: string }> {
-    return this.request<{ status: string }>('/health');
+    return this.request<{ status: string }>("/health");
   }
 }
 
